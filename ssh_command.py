@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import paramiko
 import argparse
 from multiprocessing import Pool
@@ -17,21 +19,29 @@ cmd = args.command
 
 
 def ssh_conn(host):
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(hostname=host, username=user, password=secret, port=22)
-    
-    stdin, stdout, stderr = client.exec_command(cmd)
-    exit_status = stdout.channel.recv_exit_status()
-    stdout_output = stdout.read().decode('utf8').rstrip('\n')
-    stderr_output = stderr.read().decode('utf8').rstrip('\n')
-    client.close()
-    if exit_status == 0:
-        print(host + ": " + stdout_output)
-    else:
-        print(f'---ERROR--- Exit status: {exit_status}')
-        print(host + ": " + stderr_output)
-
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(hostname=host, username=user, password=secret, port=22)
+        
+        stdin, stdout, stderr = client.exec_command(cmd)
+        exit_status = stdout.channel.recv_exit_status()
+        stdout_output = stdout.read().decode('utf8').rstrip('\n')
+        stderr_output = stderr.read().decode('utf8').rstrip('\n')
+        client.close()
+        if exit_status == 0:
+            print(host + ": " + stdout_output)
+        else:
+            print(f'---ERROR--- Exit status: {exit_status}')
+            print(host + ": " + stderr_output)
+    except (
+        Exception,
+        paramiko.BadHostKeyException,
+        paramiko.AuthenticationException,
+        paramiko.SSHException,
+    ) as e:
+        print("Cannot connect to host: " + host)
+        print(e)
 
 
 with Pool() as pool:
